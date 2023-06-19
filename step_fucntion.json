@@ -1,0 +1,51 @@
+{
+  "Comment": "A simple AWS Step Functions state machine that automates a call center support session.",
+  "StartAt": "Step Function Start",
+  "States": {
+    "Step Function Start": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:312319471494:function:test-lambda-starter",
+      "Next": "Data Conversion"
+    },
+    "Data Conversion":{
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:312319471494:function:convertData",
+      "Next": "Is Success?"
+    },
+    "Is Success?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.status",
+          "StringEquals": "400",
+          "Next": "Send Notification to Topic"
+        }
+      ],
+      "Default": "Send Messages to Queue"
+    },
+    "Send Notification to Topic": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:312319471494:test-sns",
+        "Message.$": "$.message",
+        "MessageAttributes": {
+          "my_attribute_no_1": {
+            "DataType": "String",
+            "StringValue": "Error Occured"
+          },
+          "my_attribute_no_2": {
+            "DataType": "String",
+            "StringValue": "Error Occured"
+          }
+        }
+      },
+      "End": true
+    },
+    "Send Messages to Queue": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:312319471494:function:test-lambda",
+      "End": true
+    }
+  }
+}
